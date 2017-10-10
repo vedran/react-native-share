@@ -74,9 +74,18 @@ RCT_EXPORT_METHOD(shareSingle:(NSDictionary *)options
             [shareCtl shareSingle:options failureCallback: failureCallback successCallback: successCallback];
         } else if([social isEqualToString:@"whatsapp"]) {
             NSLog(@"TRY OPEN whatsapp");
-            
             WhatsAppShare *shareCtl = [[WhatsAppShare alloc] init];
             [shareCtl shareSingle:options failureCallback: failureCallback successCallback: successCallback];
+        } else if([social isEqualToString:@"instagram"]) {
+            NSLog(@"Try open view");
+
+            NSString *shareUrl = [RCTConvert NSString:options[@"url"]];
+            NSURL *fileUrl = [NSURL URLWithString:shareUrl];
+
+            NSURL *downloadedFileUrl = [self downloadFile:fileUrl];
+            if (downloadedFileUrl) {
+                [self displayDocument:downloadedFileUrl];
+            }
         } else if([social isEqualToString:@"email"]) {
             NSLog(@"TRY OPEN email");
             EmailShare *shareCtl = [[EmailShare alloc] init];
@@ -87,5 +96,27 @@ RCT_EXPORT_METHOD(shareSingle:(NSDictionary *)options
         return;
     }
 }
+
+
+- (void) displayDocument:(NSURL*)fileUrl {
+    self.documentController = [UIDocumentInteractionController interactionControllerWithURL:fileUrl];
+    self.documentController.delegate = self;
+    self.documentController.UTI = @"com.instagram.exclusivegram";
+    UIViewController *ctrl = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
+    [self.documentController presentOpenInMenuFromRect:CGRectZero inView:ctrl.view animated:YES];
+}
+
+- (NSURL*) downloadFile:(NSURL *)fileUrl {
+    NSString *fileName = [fileUrl lastPathComponent];
+    NSURL *tmpDir = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
+    NSString  *tmpFilePath = [NSString stringWithFormat:@"%@/cheeky-share-insta.igo", [tmpDir path]];
+    NSURL *tmpFileUrl = [NSURL fileURLWithPath:tmpFilePath];
+
+    NSData *urlData = [NSData dataWithContentsOfURL:fileUrl];
+    [urlData writeToFile:tmpFilePath atomically:YES];
+
+    return tmpFileUrl;
+}
+
 
 @end
